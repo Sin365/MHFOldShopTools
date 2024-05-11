@@ -24,6 +24,20 @@ namespace MHFOldShopTools
             }
         }
 
+        public static bool LoadFile(string FilePath, out string[] lines)
+        {
+            try
+            {
+                lines = File.ReadAllLines(FilePath);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                lines = null;
+                return false;
+            }
+        }
+
         public static string[] GetDirFile(string Path)
         {
             return Directory.GetFiles(Path);
@@ -33,6 +47,7 @@ namespace MHFOldShopTools
         {
             return Encoding.Default.GetBytes(value);
         }
+
         public static bool SaveFile(string FilePath, byte[] buffer)
         {
             try
@@ -51,6 +66,12 @@ namespace MHFOldShopTools
             {
                 return false;
             }
+        }
+
+
+        public static void SaveFile(string FilePath, string[] strArr)
+        {
+            System.IO.File.WriteAllLines(FilePath, strArr);
         }
     }
 }
