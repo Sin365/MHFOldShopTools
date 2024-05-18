@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Text;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace MHFOldShopTools
 {
@@ -35,6 +36,7 @@ namespace MHFOldShopTools
                 Console.WriteLine($"请确保Files目录中已放置解密的MHF-FW5 mhfdat.bin文件，请选择:");
                 Console.WriteLine($"[1]，解析Files目录中bin文件，生成同名txt清单和csv表");
                 Console.WriteLine($"[2]，解析Files目录中csv文件，修改回同名的bin文件中");
+                Console.WriteLine($"[3]，探索道具数据");
                 Console.WriteLine($"Please ensure that the decrypted MHF-FW5 mhfdat.bin file is placed in the Files directory. Please select:");
                 Console.WriteLine($"[1],Parse the .bin file in the Files directory and generate a .txt list and .csv table with the same name");
                 Console.WriteLine($"[2],Parse the .csv file in the Files directory and modify it back to the .bin file with the same name");
@@ -44,6 +46,8 @@ namespace MHFOldShopTools
                     bflag = 1;
                 else if(yn.ToLower() == "2")
                     bflag = 2;
+                else if (yn.ToLower() == "3")
+                    bflag = 3;
 
                 if (bflag != 0)
                     break;
@@ -80,7 +84,7 @@ namespace MHFOldShopTools
                     Console.WriteLine($">>>>>>>>>>>>>>处理完毕>>>>>>>>>>>>>>");
                 }
             }
-            else
+            else if (bflag == 2)
             {
                 int index = 0;
                 int errcount = 0;
@@ -110,6 +114,38 @@ namespace MHFOldShopTools
 
                     Console.WriteLine($">>>>>>>>>>>>>>处理完毕>>>>>>>>>>>>>>");
                 }
+            }
+            else if (bflag == 3)
+            {
+                int index = 0;
+                int errcount = 0;
+                for (int i = 0; i < files.Length; i++)
+                {
+                    string FileName = files[i].Substring(files[i].LastIndexOf("\\"));
+
+                    if (System.IO.Path.GetExtension(FileName).ToLower() != ".bin")
+                    {
+                        continue;
+                    }
+                    index++;
+
+                    Console.WriteLine($">>>>>>>>>>>>>>开始处理 第{index}个文件  {FileName}<<<<<<<<<<<<<<<<<<<");
+                    FileHelper.LoadFile(files[i], out byte[] data);
+
+                    DiscoverItems(data, out List<string> OutInput, out List<string> outPutCsv);
+
+
+                    //string listfileName = System.IO.Path.GetFileNameWithoutExtension(FileName) + ".txt";
+                    //string listoutpath = loc + InDir + "\\" + listfileName;
+                    //FileHelper.SaveFile(listoutpath, OutInputString.ToArray());
+
+                    //string csvfileName = System.IO.Path.GetFileNameWithoutExtension(FileName) + ".csv";
+                    //string csvoutpath = loc + InDir + "\\" + csvfileName;
+                    //FileHelper.SaveFile(csvoutpath, outPutCsv.ToArray());
+
+                    Console.WriteLine($">>>>>>>>>>>>>>处理完毕>>>>>>>>>>>>>>");
+                }
+
             }
 
             while (true)
@@ -143,7 +179,7 @@ namespace MHFOldShopTools
                     ItemInfo = $"{"0x" + item.Ptr.ToString("X") + ":"} |   {item.ItemID}   ({MHHelper.Get2MHFItemName(item.ItemID)})   |   {item.Point}点    |   {item.Group}（{GetShopName(item.Group)}） {item.LevelType}({GetLevelTypeName(item.LevelType)})| [{item.OtherData[0].ToString("X")} {item.OtherData[1].ToString("X")} {item.OtherData[2].ToString("X")} {item.OtherData[3].ToString("X")}]";
 
                 OutInput.Add(ItemInfo);
-                outPutCsv.Add($"{item.ItemID},{item.Point},{item.Group},{item.LevelType}");
+                outPutCsv.Add($"{item.ItemID},{item.Point},{item.Group},{item.LevelType},{MHHelper.Get2MHFItemName(item.ItemID)}");
                 Console.WriteLine(ItemInfo);
             }
 
@@ -167,6 +203,61 @@ namespace MHFOldShopTools
                 Console.WriteLine(ItemInfo);
             }
             */
+        }
+
+        static void DiscoverItems(byte[] data, out List<string> OutInput, out List<string> outPutCsv)
+        {
+            OutInput = new List<string>();
+            outPutCsv = new List<string>();
+            List<ShopItem> items = new List<ShopItem>();
+            
+
+            int TempPtr = 0x537924;
+            int ToUpCount = 712;
+
+            int flag = 2;
+            //顺序
+            if (flag == 1)
+            {
+                for (int i = 0; i < ToUpCount; i++)
+                {
+                    items.Add(GetShopItemInfo(data, TempPtr + (1 * i * _singelItemDatalenght)));
+                }
+
+                for (int i = 0; i < items.Count; i++)
+                {
+                    ShopItem item = items[i];
+                    string ItemInfo;
+                    if (item.UnKnow)
+                        ItemInfo = $"{"0x" + item.Ptr.ToString("X") + ":"} |   解析失败";
+                    else
+                        ItemInfo = $"{"0x" + item.Ptr.ToString("X") + ":"} |   {item.ItemID}   ({MHHelper.Get2MHFItemName(item.ItemID)})   |   {item.Point}点    |   {item.Group}（{GetShopName(item.Group)}） {item.LevelType}({GetLevelTypeName(item.LevelType)})| [{item.OtherData[0].ToString("X")} {item.OtherData[1].ToString("X")} {item.OtherData[2].ToString("X")} {item.OtherData[3].ToString("X")}]";
+
+                    Console.WriteLine(ItemInfo);
+                }
+            }
+            else //倒叙
+            {
+                {
+                    for (int i = ToUpCount - 1; i >= 0; i--)
+                    {
+                        items.Add(GetShopItemInfo(data, TempPtr + (-1 * i * _singelItemDatalenght)));
+                    }
+
+                    for (int i = 0; i < items.Count; i++)
+                    {
+                        ShopItem item = items[i];
+                        string ItemInfo;
+                        if (item.UnKnow)
+                            ItemInfo = $"{"0x" + item.Ptr.ToString("X") + ":"} |   解析失败";
+                        else
+                            ItemInfo = $"{"0x" + item.Ptr.ToString("X") + ":"} |   {item.ItemID}   ({MHHelper.Get2MHFItemName(item.ItemID)})   |   {item.Point}点    |   {item.Group}（{GetShopName(item.Group)}） {item.LevelType}({GetLevelTypeName(item.LevelType)})| [{item.OtherData[0].ToString("X")} {item.OtherData[1].ToString("X")} {item.OtherData[2].ToString("X")} {item.OtherData[3].ToString("X")}]";
+
+                        Console.WriteLine(ItemInfo);
+                    }
+                }
+            }
+
         }
 
         static List<ShopItem> LoadStructForCsv(string[] lines)
