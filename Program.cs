@@ -100,7 +100,7 @@ namespace MHFOldShopTools
 
                     Console.WriteLine($">>>>>>>>>>>>>>开始处理 第{index}个文件  {FileName}<<<<<<<<<<<<<<<<<<<");
                     FileHelper.LoadFile(files[i], out string[] lines);
-                    List<ShopItem> itemlist = LoadStructForCsv(lines);
+                    List<NPShopItem> itemlist = LoadStructForCsv(lines);
 
 
                     string binfileName = System.IO.Path.GetFileNameWithoutExtension(FileName) + ".bin";
@@ -108,7 +108,7 @@ namespace MHFOldShopTools
 
                     FileHelper.LoadFile(binoutpath, out byte[] bindata);
 
-                    ModifyItem(bindata, itemlist, out byte[] ResultData);
+                    ModifyNPShopItem(bindata, itemlist, out byte[] ResultData);
 
                     FileHelper.SaveFile(binoutpath, ResultData);
 
@@ -132,16 +132,7 @@ namespace MHFOldShopTools
                     Console.WriteLine($">>>>>>>>>>>>>>开始处理 第{index}个文件  {FileName}<<<<<<<<<<<<<<<<<<<");
                     FileHelper.LoadFile(files[i], out byte[] data);
 
-                    DiscoverItems(data, out List<string> OutInput, out List<string> outPutCsv);
-
-
-                    //string listfileName = System.IO.Path.GetFileNameWithoutExtension(FileName) + ".txt";
-                    //string listoutpath = loc + InDir + "\\" + listfileName;
-                    //FileHelper.SaveFile(listoutpath, OutInputString.ToArray());
-
-                    //string csvfileName = System.IO.Path.GetFileNameWithoutExtension(FileName) + ".csv";
-                    //string csvoutpath = loc + InDir + "\\" + csvfileName;
-                    //FileHelper.SaveFile(csvoutpath, outPutCsv.ToArray());
+                    DiscoverItems4(data, out List<string> OutInput, out List<string> outPutCsv);
 
                     Console.WriteLine($">>>>>>>>>>>>>>处理完毕>>>>>>>>>>>>>>");
                 }
@@ -156,22 +147,22 @@ namespace MHFOldShopTools
 
 
         static int NPStore_Ptr = 0x537924;
-        const int _singelItemDatalenght = 12;
+        const int _NPsingelItemDatalenght = 12;
         static int NPStore_ItemCount = 712;
 
         static void ReaderItems(byte[] data,out List<string> OutInput,out  List<string> outPutCsv)
         {
             OutInput = new List<string>();
             outPutCsv = new List<string>();
-            List<ShopItem> items = new List<ShopItem>();
+            List<NPShopItem> items = new List<NPShopItem>();
             for (int i = 0; i < NPStore_ItemCount; i++)
             {
-                items.Add(GetShopItemInfo(data, NPStore_Ptr + (i * _singelItemDatalenght)));
+                items.Add(GetNPShopItemInfo(data, NPStore_Ptr + (i * _NPsingelItemDatalenght)));
             }
 
             for (int i = 0; i < items.Count; i++)
             {
-                ShopItem item = items[i];
+                NPShopItem item = items[i];
                 string ItemInfo;
                 if (item.UnKnow)
                     ItemInfo = $"{"0x" + item.Ptr.ToString("X") + ":"} |   解析失败";
@@ -209,24 +200,24 @@ namespace MHFOldShopTools
         {
             OutInput = new List<string>();
             outPutCsv = new List<string>();
-            List<ShopItem> items = new List<ShopItem>();
-            
+            List<NPShopItem> items = new List<NPShopItem>();
 
-            int TempPtr = 0x537924;
-            int ToUpCount = 712;
 
-            int flag = 2;
+            int TempPtr = 0x536100 - 1200;
+            int ToUpCount = 3000;
+
+            int flag = 1;
             //顺序
             if (flag == 1)
             {
                 for (int i = 0; i < ToUpCount; i++)
                 {
-                    items.Add(GetShopItemInfo(data, TempPtr + (1 * i * _singelItemDatalenght)));
+                    items.Add(GetNPShopItemInfo(data, TempPtr + (1 * i * _NPsingelItemDatalenght)));
                 }
 
                 for (int i = 0; i < items.Count; i++)
                 {
-                    ShopItem item = items[i];
+                    NPShopItem item = items[i];
                     string ItemInfo;
                     if (item.UnKnow)
                         ItemInfo = $"{"0x" + item.Ptr.ToString("X") + ":"} |   解析失败";
@@ -241,12 +232,12 @@ namespace MHFOldShopTools
                 {
                     for (int i = ToUpCount - 1; i >= 0; i--)
                     {
-                        items.Add(GetShopItemInfo(data, TempPtr + (-1 * i * _singelItemDatalenght)));
+                        items.Add(GetNPShopItemInfo(data, TempPtr + (-1 * i * _NPsingelItemDatalenght)));
                     }
 
                     for (int i = 0; i < items.Count; i++)
                     {
-                        ShopItem item = items[i];
+                        NPShopItem item = items[i];
                         string ItemInfo;
                         if (item.UnKnow)
                             ItemInfo = $"{"0x" + item.Ptr.ToString("X") + ":"} |   解析失败";
@@ -259,14 +250,152 @@ namespace MHFOldShopTools
             }
 
         }
-
-        static List<ShopItem> LoadStructForCsv(string[] lines)
+        static void DiscoverItems2(byte[] data, out List<string> OutInput, out List<string> outPutCsv)
         {
-            List<ShopItem> itemList = new List<ShopItem>();
+            OutInput = new List<string>();
+            outPutCsv = new List<string>();
+            List<ShopItem_8Byte> items = new List<ShopItem_8Byte>();
+
+            int TempPtr = 0x535F30;
+            int ToUpCount = 3000;
+            int singelItemDatalenght = 8;
+            int flag = 2;
+            //顺序
+            if (flag == 1)
+            {
+                for (int i = 0; i < ToUpCount; i++)
+                {
+                    items.Add(Get8ByteShopItemInfo(data, TempPtr + (1 * i * singelItemDatalenght)));
+                }
+
+                for (int i = 0; i < items.Count; i++)
+                {
+                    ShopItem_8Byte item = items[i];
+                    string ItemInfo;
+                    ItemInfo = $"{"0x" + item.Ptr.ToString("X") + ":"} |   {item.ItemID}   ({MHHelper.Get2MHFItemName(item.ItemID)})   |   {item.Point}点";
+                    Console.WriteLine(ItemInfo);
+                }
+            }
+            else //倒叙
+            {
+                {
+                    for (int i = ToUpCount - 1; i >= 0; i--)
+                    {
+                        items.Add(Get8ByteShopItemInfo(data, TempPtr + (-1 * i * singelItemDatalenght)));
+                    }
+
+                    for (int i = 0; i < items.Count; i++)
+                    {
+                        ShopItem_8Byte item = items[i];
+                        string ItemInfo;
+                        ItemInfo = $"{"0x" + item.Ptr.ToString("X") + ":"} |   {item.ItemID}   ({MHHelper.Get2MHFItemName(item.ItemID)})   |   {item.Point}点";
+
+                        Console.WriteLine(ItemInfo);
+                    }
+                }
+            }
+
+        }
+        static void DiscoverItems3(byte[] data, out List<string> OutInput, out List<string> outPutCsv)
+        {
+            OutInput = new List<string>();
+            outPutCsv = new List<string>();
+            List<ShopItem_8ByteII> items = new List<ShopItem_8ByteII>();
+
+            int TempPtr = 0x535F30;
+            int ToUpCount = 3000;
+            int singelItemDatalenght = 8;
+            int flag = 2;
+            //顺序
+            if (flag == 1)
+            {
+                for (int i = 0; i < ToUpCount; i++)
+                {
+                    items.Add(Get8BbyteIIShopItemInfo(data, TempPtr + (1 * i * singelItemDatalenght)));
+                }
+
+                for (int i = 0; i < items.Count; i++)
+                {
+                    ShopItem_8ByteII item = items[i];
+                    string ItemInfo;
+                    ItemInfo = $"{"0x" + item.Ptr.ToString("X") + ":"} |   {item.ItemID}   ({MHHelper.Get2MHFItemName(item.ItemID)})   |   {item.Point}点";
+                    Console.WriteLine(ItemInfo);
+                }
+            }
+            else //倒叙
+            {
+                {
+                    for (int i = ToUpCount - 1; i >= 0; i--)
+                    {
+                        items.Add(Get8BbyteIIShopItemInfo(data, TempPtr + (-1 * i * singelItemDatalenght)));
+                    }
+
+                    for (int i = 0; i < items.Count; i++)
+                    {
+                        ShopItem_8ByteII item = items[i];
+                        string ItemInfo;
+                        ItemInfo = $"{"0x" + item.Ptr.ToString("X") + ":"} |   {item.ItemID}   ({MHHelper.Get2MHFItemName(item.ItemID)})   |   {item.Point}点";
+
+                        Console.WriteLine(ItemInfo);
+                    }
+                }
+            }
+
+        }
+        static void DiscoverItems4(byte[] data, out List<string> OutInput, out List<string> outPutCsv)
+        {
+            OutInput = new List<string>();
+            outPutCsv = new List<string>();
+            List<ShopItem_2Byte> items = new List<ShopItem_2Byte>();
+
+            int TempPtr = 0x535F40;
+            int ToUpCount = 3000;
+            int singelItemDatalenght = 2;
+            int flag = 2;
+            //顺序
+            if (flag == 1)
+            {
+                for (int i = 0; i < ToUpCount; i++)
+                {
+                    items.Add(Get2BbyteShopItemInfo(data, TempPtr + (1 * i * singelItemDatalenght)));
+                }
+
+                for (int i = 0; i < items.Count; i++)
+                {
+                    ShopItem_2Byte item = items[i];
+                    string ItemInfo;
+                    ItemInfo = $"{"0x" + item.Ptr.ToString("X") + ":"} |   {item.ItemID}   ({MHHelper.Get2MHFItemName(item.ItemID)})";
+                    Console.WriteLine(ItemInfo);
+                }
+            }
+            else //倒叙
+            {
+                {
+                    for (int i = ToUpCount - 1; i >= 0; i--)
+                    {
+                        items.Add(Get2BbyteShopItemInfo(data, TempPtr + (-1 * i * singelItemDatalenght)));
+                    }
+
+                    for (int i = 0; i < items.Count; i++)
+                    {
+                        ShopItem_2Byte item = items[i];
+                        string ItemInfo;
+                        ItemInfo = $"{"0x" + item.Ptr.ToString("X") + ":"} |   {item.ItemID}   ({MHHelper.Get2MHFItemName(item.ItemID)})";
+
+                        Console.WriteLine(ItemInfo);
+                    }
+                }
+            }
+
+        }
+
+        static List<NPShopItem> LoadStructForCsv(string[] lines)
+        {
+            List<NPShopItem> itemList = new List<NPShopItem>();
             for (int i = 0;i < lines.Length; i++)
             {
                 string[] temp = lines[i].Split(',');
-                ShopItem item = new ShopItem()
+                NPShopItem item = new NPShopItem()
                 {
                     ItemID = Convert.ToInt32(temp[0]),
                     Point = Convert.ToInt32(temp[1]),
@@ -278,18 +407,18 @@ namespace MHFOldShopTools
             return itemList;
         }
 
-        static void ModifyItem(byte[] srcdata, List<ShopItem> items,out byte[] ResultData)
+        static void ModifyNPShopItem(byte[] srcdata, List<NPShopItem> items,out byte[] ResultData)
         {
             byte[] target = HexHelper.CopyByteArr(srcdata);
 
             //ClearData
-            for (int i = NPStore_Ptr; i < NPStore_Ptr + (NPStore_ItemCount * _singelItemDatalenght); i++)
+            for (int i = NPStore_Ptr; i < NPStore_Ptr + (NPStore_ItemCount * _NPsingelItemDatalenght); i++)
                 target[i] = 0x00;
 
             for (int i = 0; i < items.Count; i++)
             {
-                ShopItem itemdata = items[i];
-                int tempItemIDPtr = NPStore_Ptr + (i * _singelItemDatalenght);
+                NPShopItem itemdata = items[i];
+                int tempItemIDPtr = NPStore_Ptr + (i * _NPsingelItemDatalenght);
                 int tempPricePtr = tempItemIDPtr + 4;
                 int tempMenuPtr = tempItemIDPtr + 4 + 4;
                 int tempLevelPtr = tempItemIDPtr + 4 + 4 + 1;
@@ -331,7 +460,9 @@ namespace MHFOldShopTools
             }
         }
 
-        static ShopItem GetShopItemInfo(byte[] data, int StartPos)
+
+        #region NP商店类
+        static NPShopItem GetNPShopItemInfo(byte[] data, int StartPos)
         {
             int ItemID = -1;
             int Point = -1;
@@ -346,25 +477,25 @@ namespace MHFOldShopTools
                 LevelType = HexHelper.bytesToInt(data, 1, StartPos + 4 + 4 + 1);
                 UnKnow = false;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                Console.WriteLine($"获取错误"+ex.ToString());
+                Console.WriteLine($"获取错误" + ex.ToString());
                 UnKnow = true;
             }
-            ShopItem item = new ShopItem()
+            NPShopItem item = new NPShopItem()
             {
                 Ptr = StartPos,
                 ItemID = ItemID,
                 Point = Point,
                 Group = Group,
                 LevelType = LevelType,
-                OtherData = new int[]{ data[StartPos + 4 + 4 + 0],data[StartPos + 4 + 4 + 1], data[StartPos + 4 + 4 + 2], data[StartPos + 4 + 4 + 3] },
+                OtherData = new int[] { data[StartPos + 4 + 4 + 0], data[StartPos + 4 + 4 + 1], data[StartPos + 4 + 4 + 2], data[StartPos + 4 + 4 + 3] },
                 UnKnow = UnKnow
             };
             return item;
         }
 
-        struct ShopItem
+        struct NPShopItem
         {
             public int Ptr;
             public int ItemID;
@@ -374,6 +505,133 @@ namespace MHFOldShopTools
             public int[] OtherData;
             public bool UnKnow;
         }
+        #endregion
+
+        #region 8字节类商品
+
+        static ShopItem_8Byte Get8ByteShopItemInfo(byte[] data, int StartPos)
+        {
+            int ItemID = -1;
+            int Point = -1;
+            int Group = -1;
+            int LevelType = -1;
+            bool UnKnow = false;
+            try
+            {
+                ItemID = HexHelper.bytesToInt(data, 4, StartPos);
+                Point = HexHelper.bytesToInt(data, 4, StartPos + 4);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"获取错误" + ex.ToString());
+                UnKnow = true;
+            }
+            ShopItem_8Byte item = new ShopItem_8Byte()
+            {
+                Ptr = StartPos,
+                ItemID = ItemID,
+                Point = Point,
+            };
+            return item;
+        }
+        struct ShopItem_8Byte
+        {
+            public int Ptr;
+            public int ItemID;
+            public int Point;
+        }
+        #endregion
+
+
+        #region 8字节II类商品
+
+        static ShopItem_8ByteII Get8BbyteIIShopItemInfo(byte[] data, int StartPos)
+        {
+            int ItemID = -1;
+            int Point = -1;
+            try
+            {
+                ItemID = HexHelper.bytesToInt(data, 2, StartPos);
+                Point = HexHelper.bytesToInt(data, 2, StartPos + 4);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"获取错误" + ex.ToString());
+            }
+            ShopItem_8ByteII item = new ShopItem_8ByteII()
+            {
+                Ptr = StartPos,
+                ItemID = ItemID,
+                Point = Point,
+            };
+            return item;
+        }
+        struct ShopItem_8ByteII
+        {
+            public int Ptr;
+            public int ItemID;
+            public int Point;
+        }
+        #endregion
+
+
+        #region 4字节II类商品
+
+        static ShopItem_4Byte Get4BbyteShopItemInfo(byte[] data, int StartPos)
+        {
+            int ItemID = -1;
+            int Point = -1;
+            try
+            {
+                ItemID = HexHelper.bytesToInt(data, 2, StartPos);
+                Point = HexHelper.bytesToInt(data, 2, StartPos + 2);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"获取错误" + ex.ToString());
+            }
+            ShopItem_4Byte item = new ShopItem_4Byte()
+            {
+                Ptr = StartPos,
+                ItemID = ItemID,
+                Point = Point,
+            };
+            return item;
+        }
+        struct ShopItem_4Byte
+        {
+            public int Ptr;
+            public int ItemID;
+            public int Point;
+        }
+        #endregion
+
+        #region 2字节
+
+        static ShopItem_2Byte Get2BbyteShopItemInfo(byte[] data, int StartPos)
+        {
+            int ItemID = -1;
+            try
+            {
+                ItemID = HexHelper.bytesToInt(data, 2, StartPos);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"获取错误" + ex.ToString());
+            }
+            ShopItem_2Byte item = new ShopItem_2Byte()
+            {
+                Ptr = StartPos,
+                ItemID = ItemID,
+            };
+            return item;
+        }
+        struct ShopItem_2Byte
+        {
+            public int Ptr;
+            public int ItemID;
+        }
+        #endregion
 
     }
 }
